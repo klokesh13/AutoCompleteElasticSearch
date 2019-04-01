@@ -1,4 +1,4 @@
-package com.org.elasticsearch.controller;
+package com.org.elasticsearch.service;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
@@ -6,12 +6,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
-import org.apache.lucene.search.join.ScoreMode;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -19,43 +15,56 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
-@RestController
-@RequestMapping("/import")
-public class ElasticSearchImportController {
+// TODO: Auto-generated Javadoc
+/**
+ * The Class ElasticSearchImportController.
+ */
+
+@Service
+public class ElasticImportService {
 	
-	public static final String SAMPLE_XLSX_FILE_PATH = "/Users/lkalapa/Documents/Learning/TorisSearchUnique_4000.xlsx";
-	
+	/** The client. */
 	TransportClient client;
 	
-	public ElasticSearchImportController() throws UnknownHostException {
+	/** The xlsx file path. */
+	@Value("${xlsx.file.path}")
+    private String XLSX_FILE_PATH;
+	
+	/** The host name. */
+	@Value("${elasticsearch.host}")
+    private String hostName;
+	
+	/**
+	 * Instantiates a new elastic search import controller.
+	 *
+	 * @throws UnknownHostException the unknown host exception
+	 */
+	public ElasticImportService() throws UnknownHostException {
     	
     	client = new PreBuiltTransportClient(Settings.EMPTY)
-                .addTransportAddress(new TransportAddress(InetAddress.getByName("localhost"), 9300));
+                .addTransportAddress(new TransportAddress(InetAddress.getByName(hostName), 9300));
 
     }
 	
-	@GetMapping("/users/insert")
+
+    /**
+     * Insert users.
+     *
+     * @throws IOException Signals that an I/O exception has occurred.
+     * @throws InvalidFormatException the invalid format exception
+     */
     public void insertUsers() throws IOException, InvalidFormatException {
     	// Creating a Workbook from an Excel file (.xls or .xlsx)
-        Workbook workbook = WorkbookFactory.create(new File(SAMPLE_XLSX_FILE_PATH));
+        Workbook workbook = WorkbookFactory.create(new File(XLSX_FILE_PATH));
 
         // Retrieving the number of sheets in the Workbook
         System.out.println("Workbook has " + workbook.getNumberOfSheets() + " Sheets : ");
@@ -119,10 +128,16 @@ public class ElasticSearchImportController {
         
     }
 	
-	@GetMapping("/vehicles/insert")
+
+    /**
+     * Insert vehicles.
+     *
+     * @throws IOException Signals that an I/O exception has occurred.
+     * @throws InvalidFormatException the invalid format exception
+     */
     public void insertVehicles() throws IOException, InvalidFormatException {
     	// Creating a Workbook from an Excel file (.xls or .xlsx)
-        Workbook workbook = WorkbookFactory.create(new File(SAMPLE_XLSX_FILE_PATH));
+        Workbook workbook = WorkbookFactory.create(new File(XLSX_FILE_PATH));
 
         // Retrieving the number of sheets in the Workbook
         System.out.println("Workbook has " + workbook.getNumberOfSheets() + " Sheets : ");
@@ -182,56 +197,6 @@ public class ElasticSearchImportController {
 	     }
         
         
-    }
-	
-	@GetMapping("/view")
-    public Map<String, Object> view() {
-        GetResponse getResponse = client.prepareGet("search-index1", "id", "1").get();
-        
-        System.out.println(getResponse.getSource());
-
-
-        return getResponse.getSource();
-    }
-
-	@GetMapping("/searchRecords")
-    public void viewRecords() {
-		
-		long startTime = System.currentTimeMillis();
-        
-        QueryBuilder qb = QueryBuilders.nestedQuery("users", QueryBuilders.boolQuery()           
-                .must(QueryBuilders.matchQuery("users.firstname", "z"))
-                .must(QueryBuilders.matchQuery("users.accountId", "TORID125"))
-                .must(QueryBuilders.matchQuery("users.systemId", "CFC")),ScoreMode.Total);
-        
-        SearchResponse response = client.prepareSearch("search-index1")
-                .setQuery(qb).setSize(10) // Query
-                .execute().actionGet();
-        
-        long diffTime = System.currentTimeMillis() - startTime;
-        
-        SearchHits searchHits=response.getHits();
-        
-        int i=0;
-        for(SearchHit hit : searchHits){
-            
-            System.out.println(hit.getSourceAsString());
-            i++;
-            
-            JSONObject root = new JSONObject(hit.getSourceAsString());
-            
-
-            JSONArray jsonArray = root.getJSONArray("users");
-            // now get the first element:
-            JSONObject firstSport = jsonArray.getJSONObject(0);
-            // and so on
-            String name = firstSport.getString("firstname");
-        }
-        
-        System.out.println("data: "+i);
-        
-        System.out.println("Number of records which matched: "+response.getHits().totalHits + " with time taking "+diffTime);
-
     }
 	
 	

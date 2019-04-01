@@ -12,18 +12,34 @@ import org.springframework.web.servlet.ModelAndView;
 import com.org.elasticsearch.dao.Record;
 import com.org.elasticsearch.service.ElasticSearchService;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class ElasticSearchController.
+ */
 @Controller
 public class ElasticSearchController {
 	
+	/** The elastic search service. */
 	@Autowired
 	ElasticSearchService elasticSearchService;
 
+	/**
+	 * First page.
+	 *
+	 * @return the model and view
+	 */
 	@RequestMapping("/elasticSearch")
 	public ModelAndView firstPage() {
 		return new ModelAndView("Welcome");
 	}
 	
 
+	/**
+	 * Gets the names.
+	 *
+	 * @param query the query
+	 * @return the names
+	 */
 	@RequestMapping(value = "/users/names")
 	@ResponseBody
 	public List<String> getNames(@RequestParam(value="term", required=false, defaultValue="") String query) {
@@ -33,6 +49,12 @@ public class ElasticSearchController {
 	    return names;
 	}
 	
+	/**
+	 * Gets the email adresses.
+	 *
+	 * @param query the query
+	 * @return the email adresses
+	 */
 	@RequestMapping(value = "/users/email")
 	@ResponseBody
 	public List<String> getEmailAdresses(@RequestParam(value="term", required=false, defaultValue="") String query) {
@@ -42,6 +64,12 @@ public class ElasticSearchController {
 	    return emailAddresses;
 	}
 	
+	/**
+	 * Gets the users.
+	 *
+	 * @param query the query
+	 * @return the users
+	 */
 	@RequestMapping(value = "/matches", produces = "application/json")
 	@ResponseBody
 	public List<Record> getUsers(@RequestParam(value="q", required=false, defaultValue="") String query) {

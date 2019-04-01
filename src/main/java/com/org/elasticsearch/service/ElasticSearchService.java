@@ -22,24 +22,30 @@ import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
 import com.org.elasticsearch.dao.Record;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class ElasticSearchService {
 	
+	/** The client. */
 	TransportClient client;
+	
+	/** The host name. */
+    @Value("${elasticsearch.host}")
+    private String hostName;
 	
 	public ElasticSearchService() throws UnknownHostException {
     	
     	client = new PreBuiltTransportClient(Settings.EMPTY)
-                .addTransportAddress(new TransportAddress(InetAddress.getByName("localhost"), 9300));
+                .addTransportAddress(new TransportAddress(InetAddress.getByName(hostName), 9300));
 
     }
 	
 	/**
-	 * Returns the names which matches the search text
-	 * 
-	 * @param searchText
-	 * @return
+	 * Returns the names which matches the entered search text.
+	 *
+	 * @param searchText the search text
+	 * @return the matching names
 	 */
 	public List<String> getMatchingNames(String searchText) {
 		
@@ -84,7 +90,7 @@ public class ElasticSearchService {
 	}
 	
 	/**
-	 * Returns the email addresses which matches the search text
+	 * Returns the email addresses which matches the entered search text
 	 * 
 	 * @param searchText
 	 * @return
@@ -128,7 +134,7 @@ public class ElasticSearchService {
 	}
 	
 	/**
-	 * Returns the email addresses which matches the search text
+	 * Returns all the users and vehicles which matches the entered search text
 	 * 
 	 * @param searchText
 	 * @return
