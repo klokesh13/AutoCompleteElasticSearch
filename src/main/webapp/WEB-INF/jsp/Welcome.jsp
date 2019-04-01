@@ -31,6 +31,14 @@ li span {
 	/* width: 225px; */
 	width: 300px;
 }
+
+body {
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 14px;
+    line-height: 1.42857143;
+    color: #354;
+    background-color: #FFC;
+}
   </style>
   
   <script>
