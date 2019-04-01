@@ -134,10 +134,10 @@ public class ElasticSearchService {
 	}
 	
 	/**
-	 * Returns all the users and vehicles which matches the entered search text
-	 * 
-	 * @param searchText
-	 * @return
+	 * Returns all the users and vehicles which matches the entered search text.
+	 *
+	 * @param searchText the search text
+	 * @return the matching users and vehicles
 	 */
 	public List<Record> getMatchingUsersAndVehicles(String searchText) {
 		
@@ -152,7 +152,7 @@ public class ElasticSearchService {
 	             ,ScoreMode.Total);
 	     
 	    SearchResponse responseVehicles = client.prepareSearch("search-index1")
-	             .setQuery(qbVehicles).setSize(5) 
+	             .setQuery(qbVehicles).setSize(10) 
 	             .execute().actionGet();
 	    
 	    SearchHits vehiclesHits = responseVehicles.getHits();
@@ -163,27 +163,78 @@ public class ElasticSearchService {
 	             //.must(QueryBuilders.matchQuery("users.systemId", "CFC"))
 	             ,ScoreMode.Total);
 	     
-		SearchResponse responseUsers = null;
+		/*SearchResponse responseUsers = null;
 		
-		if(vehiclesHits.totalHits >= 5) {
+		if(vehiclesHits.totalHits >= 5 ) {
 			responseUsers = client.prepareSearch("search-index1")
 		             .setQuery(qbUsers).setSize(5) 
 		             .execute().actionGet();
 		} else {
-			int size = 10 - (int)vehiclesHits.totalHits;
+			int usersSize = 10 - (int)vehiclesHits.totalHits;
 			
 			responseUsers = client.prepareSearch("search-index1")
 		             .setQuery(qbUsers).setSize(size) 
 		             .execute().actionGet();
 		}
+		
+		users = getRecords(responseUsers.getHits(), usersSize, responseVehicles.getHits(), 10-usersSize);
+		
+		*/
 	     
+		SearchResponse responseUsers = client.prepareSearch("search-index1")
+	             .setQuery(qbUsers).setSize(10) 
+	             .execute().actionGet();
+		
+		SearchHits userHits = responseUsers.getHits();
+		int defaultSize = 5;
+		int size = 0;
+		
+		if(userHits.totalHits >= defaultSize && vehiclesHits.totalHits >= defaultSize) {
+			users = getRecords(responseUsers.getHits(), defaultSize, responseVehicles.getHits(), defaultSize);
+		} else if(userHits.totalHits >= defaultSize && vehiclesHits.totalHits < defaultSize) {
+			size = 10 - (int)vehiclesHits.totalHits;
+			if(userHits.totalHits >= size) {
+				users = getRecords(responseUsers.getHits(), size, responseVehicles.getHits(), (int)vehiclesHits.totalHits);
+			} else {
+				users = getRecords(responseUsers.getHits(), (int)userHits.totalHits, responseVehicles.getHits(), (int)vehiclesHits.totalHits);
+			}
+			
+		} else if(userHits.totalHits < defaultSize && vehiclesHits.totalHits >= defaultSize) {
+			size = 10 - (int)userHits.totalHits;
+			if(vehiclesHits.totalHits >= size) {
+				users = getRecords(responseUsers.getHits(), (int)userHits.totalHits, responseVehicles.getHits(), size);
+			} else {
+				users = getRecords(responseUsers.getHits(), (int)userHits.totalHits, responseVehicles.getHits(), (int)vehiclesHits.totalHits);
+			}
+			
+		} else {
+			users = getRecords(responseUsers.getHits(), (int)userHits.totalHits, responseVehicles.getHits(), (int)vehiclesHits.totalHits);
+			
+		}
 	     
+	     zipMap.put("users", users);
+
 	     
-	     SearchHits usersHits = responseUsers.getHits();
-	     
-	     
-	     for(SearchHit userhit : usersHits){
+	     return users;
+		
+	}
+	
+	/**
+	 * Gets the records.
+	 *
+	 * @param userHits the user hits
+	 * @param usersSize the users size
+	 * @param vehicleHits the vehicle hits
+	 * @param vehiclesSize the vehicles size
+	 * @return the records
+	 */
+	public List<Record> getRecords(SearchHits userHits, int usersSize, SearchHits vehicleHits, int vehiclesSize) {
+		
+		List<Record> records = new ArrayList<Record>();
+		
+		for(int i=0; i< usersSize; i++){
 	    	 
+			 SearchHit userhit = userHits.getAt(i);
 	    	 Record record = new Record();
 	         
 	         JSONObject root = new JSONObject(userhit.getSourceAsString());
@@ -198,12 +249,13 @@ public class ElasticSearchService {
 	         record.setSystemId(firstSport.getString("systemId"));
 	         record.setAccountId(firstSport.getString("accountId"));
 	         
-	         users.add(record);
+	         records.add(record);
 		
 	     }
 	     
-	     for(SearchHit vehiclehit : vehiclesHits){
+		for(int i=0; i< vehiclesSize; i++){
 	    	 
+			 SearchHit vehiclehit = vehicleHits.getAt(i);
 	    	 Record record = new Record();
 	         
 	         JSONObject root = new JSONObject(vehiclehit.getSourceAsString());
@@ -215,14 +267,11 @@ public class ElasticSearchService {
 	         record.setVehicleSystemId(firstSport.getString("systemId"));
 	         record.setSystemId(firstSport.getString("accountId"));
 	         
-	         users.add(record);
+	         records.add(record);
 		
 	     }
-	     
-	     zipMap.put("users", users);
-
-	     
-	     return users;
+		
+		return records;
 		
 	}
 
